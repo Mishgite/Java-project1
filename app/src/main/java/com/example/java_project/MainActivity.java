@@ -1,5 +1,7 @@
 package com.example.java_project;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewResults;
     private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto;
     private Bitmap selectedImage;
+    private Button buttonCopyText;
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +50,14 @@ public class MainActivity extends AppCompatActivity {
         buttonSelectImage = findViewById(R.id.buttonSelectImage);
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
+        buttonCopyText = findViewById(R.id.buttonCopyText);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
 
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
 
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
+        buttonCopyText.setOnClickListener(v -> copyToClipboard());
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -137,6 +142,23 @@ public class MainActivity extends AppCompatActivity {
             textViewResults.setText(recognizedText.toString());
         } else {
             textViewResults.setText("Текст не распознан.");
+        }
+    }
+
+    private void copyToClipboard() {
+        String textToCopy = textViewResults.getText().toString();
+
+        if (!textToCopy.isEmpty()) {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+
+            ClipData clip = ClipData.newPlainText("Recognized Text", textToCopy);
+
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(MainActivity.this, "Текст скопирован в буфер обмена", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(MainActivity.this, "Нет текста для копирования", Toast.LENGTH_SHORT).show();
         }
     }
 }

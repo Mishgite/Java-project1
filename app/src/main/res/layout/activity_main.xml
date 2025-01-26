@@ -31,17 +31,31 @@
         android:layout_marginTop="20dp"
         android:enabled="false" />
 
-    <!-- Добавляем горизонтальную прокрутку для текста -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/buttonCopyText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp">
-        <TextView
-            android:id="@+id/textViewResults"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Результат"
-            android:padding="10dp" />
-    </HorizontalScrollView>
+        android:text="Копировать текст"
+        android:layout_marginTop="20dp"
+        android:enabled="false" />
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/textViewResults"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Результат"
+                android:padding="10dp" />
+        </HorizontalScrollView>
+    </ScrollView>
+
 
 </LinearLayout>
