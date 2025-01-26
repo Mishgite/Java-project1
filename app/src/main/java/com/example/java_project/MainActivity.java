@@ -1,183 +1,173 @@
 package com.example.java_project;
 
-import android.Manifest;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.Camera;
-import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageCapture;
-import androidx.camera.core.Preview;
-import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.camera.view.PreviewView;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.objects.DetectedObject;
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
 import com.google.mlkit.vision.objects.ObjectDetection;
 import com.google.mlkit.vision.objects.ObjectDetector;
+import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
+import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int SELECT_IMAGE_REQUEST = 1;
+
     private ImageView imageView;
     private TextView textViewResults;
-    private Button buttonRecognizeText, buttonDetectObjects, buttonCopyResult;
-    private PreviewView previewView;
-
+    private Button buttonSelectImage, buttonRecognizeText, buttonDetectObjects, buttonCopyResult;
     private Bitmap selectedImage;
-    private TextRecognizer textRecognizer;
-    private ObjectDetector objectDetector;
-
-    private ExecutorService cameraExecutor;
-    private View cameraPreview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cameraPreview = findViewById(R.id.cameraPreview);
+        imageView = findViewById(R.id.imageView);
+        textViewResults = findViewById(R.id.textViewResults);
+        buttonSelectImage = findViewById(R.id.buttonSelectImage);
+        buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
+        buttonDetectObjects = findViewById(R.id.buttonDetectObjects);
+        buttonCopyResult = findViewById(R.id.buttonCopyResult);
 
-        cameraExecutor = Executors.newSingleThreadExecutor();
+        buttonSelectImage.setOnClickListener(v -> selectImage());
 
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 101);
+        buttonRecognizeText.setOnClickListener(v -> recognizeText());
 
-        startCamera();
+        buttonDetectObjects.setOnClickListener(v -> detectObjects());
+        buttonCopyResult.setOnClickListener(v -> copyResultToClipboard());
     }
 
-    private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-
-        cameraProviderFuture.addListener(() -> {
-            try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
-                Preview preview = new Preview.Builder().build();
-                ImageAnalysis imageAnalysis = new ImageAnalysis.Builder().build();
-                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-
-                preview.setSurfaceProvider((Preview.SurfaceProvider) cameraPreview.getOutlineProvider());
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
-
-            } catch (Exception e) {
-                Log.e("CameraX", "Ошибка запуска камеры", e);
-            }
-        }, ContextCompat.getMainExecutor(this));
+    private void selectImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, SELECT_IMAGE_REQUEST);
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (cameraExecutor != null) {
-            cameraExecutor.shutdown();
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == SELECT_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
+            Uri imageUri = data.getData();
+            try {
+                InputStream imageStream = getContentResolver().openInputStream(imageUri);
+                selectedImage = BitmapFactory.decodeStream(imageStream);
+                imageView.setImageBitmap(selectedImage);
+
+                buttonRecognizeText.setEnabled(true);
+                buttonDetectObjects.setEnabled(true);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void recognizeText() throws ExecutionException, InterruptedException {
-        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build();
+    private void recognizeText() {
+        if (selectedImage == null) {
+            textViewResults.setText("Пожалуйста, выберите изображение.");
+            return;
+        }
 
-        imageAnalysis.setAnalyzer(cameraExecutor, imageProxy -> {
-            @SuppressWarnings("UnsafeOptInUsageError")
-            InputImage image = InputImage.fromMediaImage(imageProxy.getImage(),
-                    imageProxy.getImageInfo().getRotationDegrees());
+        InputImage image = InputImage.fromBitmap(selectedImage, 0);
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 
-            textRecognizer.process(image)
-                    .addOnSuccessListener(result -> {
-                        runOnUiThread(() -> {
-                            String recognizedText = result.getText();
-                            if (!recognizedText.isEmpty()) {
-                                textViewResults.setText(recognizedText);
-                            } else {
-                                textViewResults.setText("Текст не найден.");
-                            }
-                        });
-                    })
-                    .addOnFailureListener(e -> {
-                        runOnUiThread(() -> textViewResults.setText("Ошибка распознавания текста."));
-                        Log.e("TextRecognition", "Ошибка распознавания текста", e);
-                    })
-                    .addOnCompleteListener(task -> imageProxy.close());
-        });
-
-        ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
-        cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, imageAnalysis);
+        recognizer.process(image)
+                .addOnSuccessListener(result -> {
+                    displayRecognizedText(result);
+                    buttonCopyResult.setEnabled(true);
+                })
+                .addOnFailureListener(e -> textViewResults.setText("Ошибка распознавания: " + e.getMessage()));
     }
 
+    private void detectObjects() {
+        if (selectedImage == null) {
+            textViewResults.setText("Пожалуйста, выберите изображение.");
+            return;
+        }
 
-    private void detectObjects() throws ExecutionException, InterruptedException {
-        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        ObjectDetectorOptions options = new ObjectDetectorOptions.Builder()
+                .setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE)
+                .enableMultipleObjects()
+                .enableClassification()
                 .build();
 
-        imageAnalysis.setAnalyzer(cameraExecutor, imageProxy -> {
-            @SuppressWarnings("UnsafeOptInUsageError")
-            InputImage image = InputImage.fromMediaImage(imageProxy.getImage(),
-                    imageProxy.getImageInfo().getRotationDegrees());
+        ObjectDetector detector = ObjectDetection.getClient(options);
 
-            objectDetector.process(image)
-                    .addOnSuccessListener(results -> {
-                        runOnUiThread(() -> {
-                            StringBuilder detectedObjects = new StringBuilder("Обнаруженные объекты:\n");
-                            for (DetectedObject object : results) {
-                                for (DetectedObject.Label label : object.getLabels()) {
-                                    detectedObjects.append(label.getText())
-                                            .append(" (")
-                                            .append(label.getConfidence())
-                                            .append(")\n");
-                                }
-                            }
-                            textViewResults.setText(detectedObjects.toString());
-                        });
-                    })
-                    .addOnFailureListener(e -> {
-                        runOnUiThread(() -> textViewResults.setText("Ошибка распознавания объектов."));
-                        Log.e("ObjectDetection", "Ошибка распознавания объектов", e);
-                    })
-                    .addOnCompleteListener(task -> imageProxy.close());
-        });
+        InputImage image = InputImage.fromBitmap(selectedImage, 0);
 
-        ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
-        cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, imageAnalysis);
+        detector.process(image)
+                .addOnSuccessListener(this::displayDetectedObjects)
+                .addOnFailureListener(e -> textViewResults.setText("Ошибка распознавания объектов: " + e.getMessage()));
     }
 
+    private void displayRecognizedText(Text result) {
+        StringBuilder recognizedText = new StringBuilder();
+
+        for (Text.TextBlock block : result.getTextBlocks()) {
+            recognizedText.append(block.getText()).append("\n");
+        }
+
+        if (recognizedText.length() > 0) {
+            textViewResults.setText(recognizedText.toString());
+        } else {
+            textViewResults.setText("Текст не распознан.");
+        }
+    }
+
+    private void displayDetectedObjects(List<DetectedObject> objects) {
+        StringBuilder detectedObjects = new StringBuilder();
+
+        for (DetectedObject object : objects) {
+            detectedObjects.append("Объект ID: ").append(object.getTrackingId()).append("\n");
+            for (DetectedObject.Label label : object.getLabels()) {
+                detectedObjects.append(" - ")
+                        .append(label.getText())
+                        .append(" (").append(label.getConfidence()).append(")\n");
+            }
+            detectedObjects.append("\n");
+        }
+
+        if (detectedObjects.length() > 0) {
+            textViewResults.setText(detectedObjects.toString());
+            buttonCopyResult.setEnabled(true);
+        } else {
+            textViewResults.setText("Объекты не распознаны.");
+        }
+    }
 
     private void copyResultToClipboard() {
-        String resultText = textViewResults.getText().toString();
-        if (!resultText.isEmpty()) {
+        String textToCopy = textViewResults.getText().toString();
+
+        if (!textToCopy.isEmpty()) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("Результат", resultText);
+            ClipData clip = ClipData.newPlainText("Распознанный текст", textToCopy);
             clipboard.setPrimaryClip(clip);
-            Toast.makeText(this, "Результат скопирован.", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(this, "Текст скопирован в буфер обмена", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this, "Нет текста для копирования.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Нет текста для копирования", Toast.LENGTH_SHORT).show();
         }
     }
-
 }
