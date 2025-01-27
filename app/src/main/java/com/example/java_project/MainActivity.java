@@ -1,5 +1,7 @@
 package com.example.java_project;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -10,10 +12,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.Manifest;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,31 +34,32 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_IMAGE_REQUEST = 1;
     private static final int TAKE_PHOTO_REQUEST = 2;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     private ImageView imageView;
-    private TextView textViewResults;
-    private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto;
+    private EditText editTextResults;
+    private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText;
     private Bitmap selectedImage;
-    private Button buttonCopyText;
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
+
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         imageView = findViewById(R.id.imageView);
-        textViewResults = findViewById(R.id.textViewResults);
+        editTextResults = findViewById(R.id.editTextResults);
         buttonSelectImage = findViewById(R.id.buttonSelectImage);
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
-
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
-
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
         buttonCopyText.setOnClickListener(v -> copyToClipboard());
+
+        // Запрашиваем разрешение на использование камеры, если оно не предоставлено
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -78,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Камера недоступна на этом устройстве", Toast.LENGTH_SHORT).show();
         }
     }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -118,17 +119,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void recognizeText() {
         if (selectedImage == null) {
-            textViewResults.setText("Пожалуйста, выберите изображение.");
+            editTextResults.setText("Пожалуйста, выберите изображение.");
             return;
         }
 
         InputImage image = InputImage.fromBitmap(selectedImage, 0);
 
+        // Инициализация распознавателя текста
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 
         recognizer.process(image)
                 .addOnSuccessListener(this::displayRecognizedText)
-                .addOnFailureListener(e -> textViewResults.setText("Ошибка распознавания: " + e.getMessage()));
+                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()));
     }
 
     private void displayRecognizedText(Text result) {
@@ -139,14 +141,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (recognizedText.length() > 0) {
-            textViewResults.setText(recognizedText.toString());
+            editTextResults.setText(recognizedText.toString());
         } else {
-            textViewResults.setText("Текст не распознан.");
+            editTextResults.setText("Текст не распознан. Убедитесь, что на изображении есть текст.");
         }
     }
 
     private void copyToClipboard() {
-        String textToCopy = textViewResults.getText().toString();
+        String textToCopy = editTextResults.getText().toString();
 
         if (!textToCopy.isEmpty()) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
