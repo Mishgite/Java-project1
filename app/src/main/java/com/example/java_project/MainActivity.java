@@ -59,7 +59,6 @@ public class MainActivity extends AppCompatActivity {
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
         buttonCopyText.setOnClickListener(v -> copyToClipboard());
 
-        // Запрашиваем разрешение на использование камеры, если оно не предоставлено
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -125,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
 
         InputImage image = InputImage.fromBitmap(selectedImage, 0);
 
-        // Инициализация распознавателя текста
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 
         recognizer.process(image)
@@ -141,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (recognizedText.length() > 0) {
-            editTextResults.setText(recognizedText.toString());
+            editTextResults.setText("Распознанный текст:\n" + recognizedText.toString());
         } else {
             editTextResults.setText("Текст не распознан. Убедитесь, что на изображении есть текст.");
         }
