@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -21,11 +22,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.text.Text;
-import com.google.mlkit.vision.text.TextRecognizer;
-import com.google.mlkit.vision.text.TextRecognition;
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.text.FirebaseVisionText;
+import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -112,21 +112,24 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        InputImage image = InputImage.fromBitmap(selectedImage, 0);
-        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(selectedImage);
+        FirebaseVisionTextRecognizer recognizer = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
 
-        // Показать индикатор загрузки
-        progressBar.setVisibility(ProgressBar.VISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
 
-        recognizer.process(image)
+        recognizer.processImage(image)
                 .addOnSuccessListener(this::displayRecognizedText)
-                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()))
-                .addOnCompleteListener(task -> progressBar.setVisibility(ProgressBar.GONE));
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    editTextResults.setText("Ошибка распознавания: " + e.getMessage());
+                });
     }
 
-    private void displayRecognizedText(Text result) {
+    private void displayRecognizedText(FirebaseVisionText result) {
+        progressBar.setVisibility(View.GONE);
+
         StringBuilder recognizedText = new StringBuilder();
-        for (Text.TextBlock block : result.getTextBlocks()) {
+        for (FirebaseVisionText.TextBlock block : result.getTextBlocks()) {
             recognizedText.append(block.getText()).append("\n");
         }
 
