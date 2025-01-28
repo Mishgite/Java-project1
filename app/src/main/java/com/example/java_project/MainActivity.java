@@ -1,7 +1,5 @@
 package com.example.java_project;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -14,7 +12,9 @@ import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.Manifest;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,9 +39,10 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private EditText editTextResults;
     private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText;
+    private ProgressBar progressBar;
+
     private Bitmap selectedImage;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
+        progressBar = findViewById(R.id.progressBar);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
@@ -77,18 +79,6 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, TAKE_PHOTO_REQUEST);
         } else {
             Toast.makeText(this, "Камера недоступна на этом устройстве", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Разрешение на камеру предоставлено", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Разрешение на камеру не предоставлено", Toast.LENGTH_SHORT).show();
-            }
         }
     }
 
@@ -123,25 +113,27 @@ public class MainActivity extends AppCompatActivity {
         }
 
         InputImage image = InputImage.fromBitmap(selectedImage, 0);
-
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+
+        // Показать индикатор загрузки
+        progressBar.setVisibility(ProgressBar.VISIBLE);
 
         recognizer.process(image)
                 .addOnSuccessListener(this::displayRecognizedText)
-                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()));
+                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()))
+                .addOnCompleteListener(task -> progressBar.setVisibility(ProgressBar.GONE));
     }
 
     private void displayRecognizedText(Text result) {
         StringBuilder recognizedText = new StringBuilder();
-
         for (Text.TextBlock block : result.getTextBlocks()) {
             recognizedText.append(block.getText()).append("\n");
         }
 
         if (recognizedText.length() > 0) {
-            editTextResults.setText("Распознанный текст:\n" + recognizedText.toString());
+            editTextResults.setText(recognizedText.toString());
         } else {
-            editTextResults.setText("Текст не распознан. Убедитесь, что на изображении есть текст.");
+            editTextResults.setText("Текст не распознан.");
         }
     }
 
@@ -150,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (!textToCopy.isEmpty()) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-
             ClipData clip = ClipData.newPlainText("Recognized Text", textToCopy);
 
             if (clipboard != null) {
