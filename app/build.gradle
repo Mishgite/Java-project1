@@ -5,16 +5,7 @@ plugins {
 android {
     namespace 'com.example.java_project'
     compileSdk 34
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
 
-    lintOptions {
-        checkReleaseBuilds false
-        abortOnError false
-        warningsAsErrors false
-    }
     defaultConfig {
         applicationId "com.example.java_project"
         minSdk 28
@@ -38,9 +29,6 @@ android {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:32.1.0')
-    implementation 'com.google.firebase:firebase-ml-vision:24.1.0'
-    implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
     implementation 'com.google.mlkit:object-detection:16.0.0'

@@ -1,5 +1,7 @@
 package com.example.java_project;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -9,23 +11,21 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
-import android.Manifest;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.firebase.ml.vision.FirebaseVision;
-import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.text.FirebaseVisionText;
-import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -39,10 +39,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private EditText editTextResults;
     private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText;
-    private ProgressBar progressBar;
-
     private Bitmap selectedImage;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
-        progressBar = findViewById(R.id.progressBar);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
@@ -82,6 +80,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Разрешение на камеру предоставлено", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Разрешение на камеру не предоставлено", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -112,31 +121,24 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(selectedImage);
-        FirebaseVisionTextRecognizer recognizer = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        InputImage image = InputImage.fromBitmap(selectedImage, 0);
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 
-        progressBar.setVisibility(View.VISIBLE);
-
-        recognizer.processImage(image)
+        recognizer.process(image)
                 .addOnSuccessListener(this::displayRecognizedText)
-                .addOnFailureListener(e -> {
-                    progressBar.setVisibility(View.GONE);
-                    editTextResults.setText("Ошибка распознавания: " + e.getMessage());
-                });
+                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()));
     }
 
-    private void displayRecognizedText(FirebaseVisionText result) {
-        progressBar.setVisibility(View.GONE);
-
+    private void displayRecognizedText(Text result) {
         StringBuilder recognizedText = new StringBuilder();
-        for (FirebaseVisionText.TextBlock block : result.getTextBlocks()) {
+        for (Text.TextBlock block : result.getTextBlocks()) {
             recognizedText.append(block.getText()).append("\n");
         }
 
         if (recognizedText.length() > 0) {
-            editTextResults.setText(recognizedText.toString());
+            editTextResults.setText("Распознанный текст:\n" + recognizedText.toString());
         } else {
-            editTextResults.setText("Текст не распознан.");
+            editTextResults.setText("Текст не распознан. Убедитесь, что на изображении есть текст.");
         }
     }
 
