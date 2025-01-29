@@ -1,6 +1,5 @@
 package com.example.java_project;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -14,19 +13,18 @@ import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.Manifest;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.text.Text;
-import com.google.mlkit.vision.text.TextRecognizer;
-import com.google.mlkit.vision.text.TextRecognition;
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import com.googlecode.tesseract.android.TessBaseAPI;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
@@ -39,7 +37,10 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private EditText editTextResults;
     private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText;
+    private ProgressBar progressBar;
+
     private Bitmap selectedImage;
+    private TessBaseAPI tessBaseAPI;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
+        progressBar = findViewById(R.id.progressBar);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
@@ -64,6 +66,11 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
         }
+
+        // Инициализация Tesseract OCR
+        tessBaseAPI = new TessBaseAPI();
+        File tessDataFolder = new File(getFilesDir(), "tessdata");
+        tessBaseAPI.init(getFilesDir().getAbsolutePath(), "rus"); // Русский язык
     }
 
     private void selectImage() {
@@ -80,17 +87,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Разрешение на камеру предоставлено", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Разрешение на камеру не предоставлено", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -121,25 +117,17 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        InputImage image = InputImage.fromBitmap(selectedImage, 0);
-        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        progressBar.setVisibility(ProgressBar.VISIBLE);
 
-        recognizer.process(image)
-                .addOnSuccessListener(this::displayRecognizedText)
-                .addOnFailureListener(e -> editTextResults.setText("Ошибка распознавания: " + e.getMessage()));
-    }
+        new Thread(() -> {
+            tessBaseAPI.setImage(selectedImage);
+            String recognizedText = tessBaseAPI.getUTF8Text();
 
-    private void displayRecognizedText(Text result) {
-        StringBuilder recognizedText = new StringBuilder();
-        for (Text.TextBlock block : result.getTextBlocks()) {
-            recognizedText.append(block.getText()).append("\n");
-        }
-
-        if (recognizedText.length() > 0) {
-            editTextResults.setText("Распознанный текст:\n" + recognizedText.toString());
-        } else {
-            editTextResults.setText("Текст не распознан. Убедитесь, что на изображении есть текст.");
-        }
+            runOnUiThread(() -> {
+                progressBar.setVisibility(ProgressBar.GONE);
+                editTextResults.setText(recognizedText.isEmpty() ? "Текст не распознан." : recognizedText);
+            });
+        }).start();
     }
 
     private void copyToClipboard() {
@@ -155,6 +143,15 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             Toast.makeText(MainActivity.this, "Нет текста для копирования", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (tessBaseAPI != null) {
+            tessBaseAPI.stop();
+            tessBaseAPI.end();
         }
     }
 }
