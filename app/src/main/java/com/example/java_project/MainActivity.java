@@ -1,32 +1,37 @@
 package com.example.java_project;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import android.Manifest;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.googlecode.tesseract.android.TessBaseAPI;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,13 +41,10 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageView imageView;
     private EditText editTextResults;
-    private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText;
     private ProgressBar progressBar;
-
+    private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText, buttonScanQR;
     private Bitmap selectedImage;
-    private TessBaseAPI tessBaseAPI;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,27 +52,24 @@ public class MainActivity extends AppCompatActivity {
 
         imageView = findViewById(R.id.imageView);
         editTextResults = findViewById(R.id.editTextResults);
+        progressBar = findViewById(R.id.progressBar);
         buttonSelectImage = findViewById(R.id.buttonSelectImage);
         buttonRecognizeText = findViewById(R.id.buttonRecognizeText);
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
-        progressBar = findViewById(R.id.progressBar);
+        buttonScanQR = findViewById(R.id.buttonScanQR);
 
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
         buttonCopyText.setOnClickListener(v -> copyToClipboard());
+        buttonScanQR.setOnClickListener(v -> scanQRCode());
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
         }
-
-        // Инициализация Tesseract OCR
-        tessBaseAPI = new TessBaseAPI();
-        File tessDataFolder = new File(getFilesDir(), "tessdata");
-        tessBaseAPI.init(getFilesDir().getAbsolutePath(), "rus"); // Русский язык
     }
 
     private void selectImage() {
@@ -91,24 +90,26 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == SELECT_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
-            Uri imageUri = data.getData();
+        if (resultCode == RESULT_OK && data != null) {
             try {
-                InputStream imageStream = getContentResolver().openInputStream(imageUri);
-                selectedImage = BitmapFactory.decodeStream(imageStream);
+                if (requestCode == SELECT_IMAGE_REQUEST) {
+                    Uri imageUri = data.getData();
+                    selectedImage = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                } else if (requestCode == TAKE_PHOTO_REQUEST) {
+                    Bundle extras = data.getExtras();
+                    selectedImage = (Bitmap) extras.get("data");
+                }
                 imageView.setImageBitmap(selectedImage);
-                buttonRecognizeText.setEnabled(true);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                enableButtons();
+            } catch (IOException e) {
+                Toast.makeText(this, "Ошибка загрузки изображения", Toast.LENGTH_SHORT).show();
             }
         }
+    }
 
-        if (requestCode == TAKE_PHOTO_REQUEST && resultCode == RESULT_OK && data != null) {
-            Bundle extras = data.getExtras();
-            selectedImage = (Bitmap) extras.get("data");
-            imageView.setImageBitmap(selectedImage);
-            buttonRecognizeText.setEnabled(true);
-        }
+    private void enableButtons() {
+        buttonRecognizeText.setEnabled(true);
+        buttonScanQR.setEnabled(true);
     }
 
     private void recognizeText() {
@@ -117,41 +118,74 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        progressBar.setVisibility(ProgressBar.VISIBLE);
+        InputImage image = InputImage.fromBitmap(selectedImage, 0);
 
-        new Thread(() -> {
-            tessBaseAPI.setImage(selectedImage);
-            String recognizedText = tessBaseAPI.getUTF8Text();
+        TextRecognizer recognizer = TextRecognition.getClient(new TextRecognizerOptions.Builder().build());
 
-            runOnUiThread(() -> {
-                progressBar.setVisibility(ProgressBar.GONE);
-                editTextResults.setText(recognizedText.isEmpty() ? "Текст не распознан." : recognizedText);
-            });
-        }).start();
+        progressBar.setVisibility(View.VISIBLE);
+        recognizer.process(image)
+                .addOnSuccessListener(result -> {
+                    StringBuilder recognizedText = new StringBuilder();
+                    for (Text.TextBlock block : result.getTextBlocks()) {
+                        recognizedText.append(block.getText()).append("\n");
+                    }
+                    editTextResults.setText(recognizedText.length() > 0 ? recognizedText.toString() : "Текст не распознан.");
+                })
+                .addOnFailureListener(e -> editTextResults.setText("Ошибка: " + e.getMessage()))
+                .addOnCompleteListener(task -> progressBar.setVisibility(View.GONE));
     }
+
+    private void scanQRCode() {
+        if (selectedImage == null) {
+            editTextResults.setText("Пожалуйста, выберите изображение.");
+            return;
+        }
+
+        InputImage image = InputImage.fromBitmap(selectedImage, 0);
+
+        // Создаем BarcodeScannerOptions, чтобы поддерживать все типы штрих-кодов
+        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(
+                        Barcode.FORMAT_CODE_128,
+                        Barcode.FORMAT_EAN_13,
+                        Barcode.FORMAT_EAN_8,
+                        Barcode.FORMAT_UPC_A,
+                        Barcode.FORMAT_UPC_E,
+                        Barcode.FORMAT_QR_CODE // добавляем поддержку QR-кодов
+                )
+                .build();
+
+        BarcodeScanner scanner = BarcodeScanning.getClient(options);
+
+        progressBar.setVisibility(View.VISIBLE);
+        scanner.process(image)
+                .addOnSuccessListener(barcodes -> {
+                    if (barcodes.isEmpty()) {
+                        editTextResults.setText("Штрих-код или QR-код не найден.");
+                    } else {
+                        StringBuilder barcodeResult = new StringBuilder("Результаты:\n");
+                        for (Barcode barcode : barcodes) {
+                            barcodeResult.append(barcode.getRawValue()).append("\n");
+                        }
+                        editTextResults.setText(barcodeResult.toString());
+                    }
+                })
+                .addOnFailureListener(e -> editTextResults.setText("Ошибка сканирования: " + e.getMessage()))
+                .addOnCompleteListener(task -> progressBar.setVisibility(View.GONE));
+    }
+
 
     private void copyToClipboard() {
         String textToCopy = editTextResults.getText().toString();
-
         if (!textToCopy.isEmpty()) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("Recognized Text", textToCopy);
-
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(MainActivity.this, "Текст скопирован в буфер обмена", Toast.LENGTH_SHORT).show();
             }
         } else {
             Toast.makeText(MainActivity.this, "Нет текста для копирования", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (tessBaseAPI != null) {
-            tessBaseAPI.stop();
-            tessBaseAPI.end();
         }
     }
 }
