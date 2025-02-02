@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -38,7 +39,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int SELECT_IMAGE_REQUEST = 1;
     private static final int TAKE_PHOTO_REQUEST = 2;
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
+    private static final int EDIT_TEXT_REQUEST = 1;
 
+    private Button buttonEditText;
     private ImageView imageView;
     private EditText editTextResults;
     private ProgressBar progressBar;
@@ -58,7 +61,9 @@ public class MainActivity extends AppCompatActivity {
         buttonTakePhoto = findViewById(R.id.buttonTakePhoto);
         buttonCopyText = findViewById(R.id.buttonCopyText);
         buttonScanQR = findViewById(R.id.buttonScanQR);
+        buttonEditText = findViewById(R.id.buttonEditText);
 
+        buttonEditText.setOnClickListener(v -> openEditActivity());
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
@@ -90,19 +95,34 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode == RESULT_OK && data != null) {
+        Log.d("MainActivity", "onActivityResult called. RequestCode: " + requestCode + ", ResultCode: " + resultCode);
+
+        if (requestCode == EDIT_TEXT_REQUEST && resultCode == RESULT_OK && data != null) {
+            String editedText = data.getStringExtra("editedText");
+            Log.d("MainActivity", "Отредактированный текст: " + editedText);
+
+            if (editedText != null) {
+                editTextResults.setText(editedText);
+            }
+        }
+
+        if (requestCode == SELECT_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
+            Uri imageUri = data.getData();
             try {
-                if (requestCode == SELECT_IMAGE_REQUEST) {
-                    Uri imageUri = data.getData();
-                    selectedImage = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                } else if (requestCode == TAKE_PHOTO_REQUEST) {
-                    Bundle extras = data.getExtras();
-                    selectedImage = (Bitmap) extras.get("data");
-                }
+                selectedImage = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
                 imageView.setImageBitmap(selectedImage);
                 enableButtons();
             } catch (IOException e) {
                 Toast.makeText(this, "Ошибка загрузки изображения", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        if (requestCode == TAKE_PHOTO_REQUEST && resultCode == RESULT_OK && data != null) {
+            Bundle extras = data.getExtras();
+            if (extras != null) {
+                selectedImage = (Bitmap) extras.get("data");
+                imageView.setImageBitmap(selectedImage);
+                enableButtons();
             }
         }
     }
@@ -143,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
 
         InputImage image = InputImage.fromBitmap(selectedImage, 0);
 
-        // Создаем BarcodeScannerOptions, чтобы поддерживать все типы штрих-кодов
         BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(
                         Barcode.FORMAT_CODE_128,
@@ -151,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                         Barcode.FORMAT_EAN_8,
                         Barcode.FORMAT_UPC_A,
                         Barcode.FORMAT_UPC_E,
-                        Barcode.FORMAT_QR_CODE // добавляем поддержку QR-кодов
+                        Barcode.FORMAT_QR_CODE
                 )
                 .build();
 
@@ -174,7 +193,6 @@ public class MainActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> progressBar.setVisibility(View.GONE));
     }
 
-
     private void copyToClipboard() {
         String textToCopy = editTextResults.getText().toString();
         if (!textToCopy.isEmpty()) {
@@ -187,5 +205,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(MainActivity.this, "Нет текста для копирования", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void openEditActivity() {
+        String recognizedText = editTextResults.getText().toString();
+        Intent intent = new Intent(MainActivity.this, EditActivity.class);
+        intent.putExtra("recognizedText", recognizedText);
+        startActivityForResult(intent, EDIT_TEXT_REQUEST);
     }
 }
