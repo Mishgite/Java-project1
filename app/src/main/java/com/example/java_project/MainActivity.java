@@ -16,6 +16,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.os.Handler;
+import android.os.Looper;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -106,14 +111,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        if (requestCode == SELECT_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
+        if (requestCode == SELECT_IMAGE_REQUEST && resultCode == RESULT_OK) {
+            if (data == null || data.getData() == null) {
+                Toast.makeText(this, "Ошибка: данные изображения отсутствуют!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             Uri imageUri = data.getData();
-            try {
-                selectedImage = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                imageView.setImageBitmap(selectedImage);
-                enableButtons();
-            } catch (IOException e) {
-                Toast.makeText(this, "Ошибка загрузки изображения", Toast.LENGTH_SHORT).show();
+            Log.d("DEBUG", "Получен imageUri: " + imageUri);
+
+            if (imageUri != null) {
+                loadImageAsync(imageUri);
+            } else {
+                Toast.makeText(this, "Ошибка: imageUri пустой!", Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -126,6 +136,27 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    private void loadImageAsync(Uri imageUri) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper()); // Исправленный импорт
+
+        executor.execute(() -> {
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                handler.post(() -> { // Возвращаемся в UI-поток
+                    selectedImage = bitmap;
+                    imageView.setImageBitmap(selectedImage);
+                    enableButtons();
+                });
+            } catch (IOException e) {
+                handler.post(() -> Toast.makeText(MainActivity.this, "Ошибка загрузки изображения", Toast.LENGTH_SHORT).show());
+            }
+        });
+
+        executor.shutdown(); // Завершаем поток
+    }
+
 
     private void enableButtons() {
         buttonRecognizeText.setEnabled(true);
