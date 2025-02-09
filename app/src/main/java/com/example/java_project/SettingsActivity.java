@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -12,10 +13,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     private Button buttonToggleTheme;
     private SharedPreferences sharedPreferences;
+    private ImageButton buttonBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Загружаем сохранённую тему перед отрисовкой UI
         sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
         if (sharedPreferences.getBoolean("dark_mode", false)) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
@@ -25,14 +26,16 @@ public class SettingsActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-
+        buttonBack = findViewById(R.id.buttonBack);
+        buttonBack.setOnClickListener(v -> {
+            finish();
+        });
         buttonToggleTheme = findViewById(R.id.buttonToggleTheme);
-        Button buttonBack = findViewById(R.id.buttonBack);
 
-        updateButtonText(); // Устанавливаем правильный текст на кнопке
+        updateButtonText();
 
         buttonToggleTheme.setOnClickListener(v -> toggleTheme());
-        buttonBack.setOnClickListener(v -> finish()); // Кнопка назад
+        buttonBack.setOnClickListener(v -> finish());
     }
 
     private void toggleTheme() {

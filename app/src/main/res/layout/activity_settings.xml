@@ -1,8 +1,19 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
+
+    <ImageButton
+        android:id="@+id/buttonBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_revert"
+        android:contentDescription="Назад"
+        android:layout_gravity="start"
+        android:layout_marginBottom="16dp"
+        android:background="?android:attr/selectableItemBackground" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -20,11 +31,4 @@
         android:layout_gravity="center"
         android:layout_marginTop="20dp"/>
 
-    <Button
-        android:id="@+id/buttonBack"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Назад"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"/>
 </LinearLayout>

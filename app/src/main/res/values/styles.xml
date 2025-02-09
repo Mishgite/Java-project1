@@ -1,11 +1,9 @@
 <resources>
-    <!-- Светлая тема -->
     <style name="Theme.App.Light" parent="Theme.Material3.Light">
         <item name="colorPrimary">#6200EE</item>
         <item name="android:windowBackground">#FFFFFF</item>
     </style>
 
-    <!-- Тёмная тема -->
     <style name="Theme.App.Dark" parent="Theme.Material3.Dark">
         <item name="colorPrimary">#121212</item>
         <item name="android:windowBackground">#000000</item>
