@@ -16,7 +16,6 @@ public class EditActivity extends AppCompatActivity {
     private EditText editText;
     private Button buttonBold, buttonItalic, buttonClear, buttonSave;
     private ImageButton buttonBack;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

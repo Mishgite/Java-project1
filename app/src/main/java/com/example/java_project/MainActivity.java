@@ -1,9 +1,11 @@
 package com.example.java_project;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -24,6 +26,7 @@ import java.util.concurrent.Executors;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonSelectImage, buttonRecognizeText, buttonTakePhoto, buttonCopyText, buttonScanQR;
     private Bitmap selectedImage;
 
+    @SuppressLint("MissingSuperCall")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +84,11 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
         }
+        Button buttonSettings = findViewById(R.id.buttonSettings);
+        buttonSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void selectImage() {
@@ -139,12 +148,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadImageAsync(Uri imageUri) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper()); // Исправленный импорт
+        Handler handler = new Handler(Looper.getMainLooper());
 
         executor.execute(() -> {
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                handler.post(() -> { // Возвращаемся в UI-поток
+                handler.post(() -> {
                     selectedImage = bitmap;
                     imageView.setImageBitmap(selectedImage);
                     enableButtons();
@@ -154,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        executor.shutdown(); // Завершаем поток
+        executor.shutdown();
     }
 
 
