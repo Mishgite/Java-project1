@@ -16,6 +16,7 @@ public class EditActivity extends AppCompatActivity {
     private EditText editText;
     private Button buttonBold, buttonItalic, buttonClear, buttonSave;
     private ImageButton buttonBack;
+    private Button buttonShareText;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,6 +28,7 @@ public class EditActivity extends AppCompatActivity {
         buttonClear = findViewById(R.id.buttonClear);
         buttonSave = findViewById(R.id.buttonSave);
         buttonBack = findViewById(R.id.buttonBack);
+        buttonShareText = findViewById(R.id.buttonShareText);
 
         String receivedText = getIntent().getStringExtra("recognizedText");
         if (receivedText != null) {
@@ -36,7 +38,7 @@ public class EditActivity extends AppCompatActivity {
         buttonBack.setOnClickListener(v -> {
             finish();
         });
-
+        buttonShareText.setOnClickListener(v -> shareText());
         buttonBold.setOnClickListener(v -> applyBold());
         buttonItalic.setOnClickListener(v -> applyItalic());
         buttonClear.setOnClickListener(v -> editText.setText(""));
@@ -67,5 +69,21 @@ public class EditActivity extends AppCompatActivity {
         if (!text.isEmpty()) {
             editText.setText("_" + text + "_");
         }
+    }
+    private void shareText() {
+        String textToShare = editText.getText().toString().trim();
+
+        if (textToShare.isEmpty()) {
+            Toast.makeText(this, "Нет текста для отправки", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
+        sendIntent.setType("text/plain");
+
+        Intent shareIntent = Intent.createChooser(sendIntent, "Поделиться через...");
+        startActivity(shareIntent);
     }
 }

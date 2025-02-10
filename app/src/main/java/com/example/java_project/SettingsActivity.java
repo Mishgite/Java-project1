@@ -52,7 +52,7 @@ public class SettingsActivity extends AppCompatActivity {
         editor.apply();
 
         updateButtonText();
-        recreate(); // Перезапускаем активность, чтобы применить изменения
+        recreate();
     }
 
     private void updateButtonText() {
