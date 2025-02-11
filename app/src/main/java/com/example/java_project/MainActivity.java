@@ -2,6 +2,7 @@ package com.example.java_project;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.SearchManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -78,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
         buttonTakePhoto.setOnClickListener(v -> takePhoto());
         buttonCopyText.setOnClickListener(v -> copyToClipboard());
         buttonScanQR.setOnClickListener(v -> scanQRCode());
+        Button buttonSearchGoogle = findViewById(R.id.buttonSearchGoogle);
+        buttonSearchGoogle.setOnClickListener(v -> searchInGoogle());
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -94,6 +97,16 @@ public class MainActivity extends AppCompatActivity {
     private void selectImage() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, SELECT_IMAGE_REQUEST);
+    }
+    private void searchInGoogle() {
+        String query = editTextResults.getText().toString().trim();
+        if (!query.isEmpty()) {
+            Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
+            intent.putExtra(SearchManager.QUERY, query);
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Введите текст для поиска", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void takePhoto() {
