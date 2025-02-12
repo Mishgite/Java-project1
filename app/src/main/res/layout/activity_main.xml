@@ -18,20 +18,29 @@
         android:scaleType="centerCrop"
         android:layout_marginBottom="16dp"
         android:background="@android:color/darker_gray" />
-
-    <Button
-        android:id="@+id/buttonSelectImage"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать изображение"
-        android:layout_marginBottom="8dp" />
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/buttonSelectImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Выбрать изображение"
+            android:layout_marginBottom="8dp" />
 
+        <Button
+            android:id="@+id/buttonTakePhoto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Сделать фото" />
+    </LinearLayout>
     <Button
-        android:id="@+id/buttonTakePhoto"
-        android:layout_width="match_parent"
+        android:id="@+id/buttonVoiceInput"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Сделать фото"
-        android:layout_marginBottom="8dp" />
+        android:text="🎤 Голосовой ввод" />
 
     <Button
         android:id="@+id/buttonRecognizeText"

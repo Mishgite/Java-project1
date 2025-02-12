@@ -3,6 +3,7 @@ package com.example.java_project;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.SearchManager;
+import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
@@ -12,6 +13,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -21,6 +23,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.os.Handler;
 import android.os.Looper;
+
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -49,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int TAKE_PHOTO_REQUEST = 2;
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     private static final int EDIT_TEXT_REQUEST = 1;
+    private static final int SPEECH_REQUEST_CODE = 200;
 
     private Button buttonEditText;
     private ImageView imageView;
@@ -72,7 +77,8 @@ public class MainActivity extends AppCompatActivity {
         buttonCopyText = findViewById(R.id.buttonCopyText);
         buttonScanQR = findViewById(R.id.buttonScanQR);
         buttonEditText = findViewById(R.id.buttonEditText);
-
+        Button buttonVoiceInput = findViewById(R.id.buttonVoiceInput);
+        buttonVoiceInput.setOnClickListener(v -> startVoiceInput());
         buttonEditText.setOnClickListener(v -> openEditActivity());
         buttonSelectImage.setOnClickListener(v -> selectImage());
         buttonRecognizeText.setOnClickListener(v -> recognizeText());
@@ -157,6 +163,13 @@ public class MainActivity extends AppCompatActivity {
                 enableButtons();
             }
         }
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (result != null && !result.isEmpty()) {
+                String recognizedText = result.get(0);
+                editTextResults.setText(recognizedText);
+            }
+        }
     }
 
     private void loadImageAsync(Uri imageUri) {
@@ -206,6 +219,18 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> editTextResults.setText("Ошибка: " + e.getMessage()))
                 .addOnCompleteListener(task -> progressBar.setVisibility(View.GONE));
+    }
+    private void startVoiceInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU"); // Русский язык
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Говорите...");
+
+        try {
+            startActivityForResult(intent, SPEECH_REQUEST_CODE);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "Распознавание речи не поддерживается", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void scanQRCode() {
