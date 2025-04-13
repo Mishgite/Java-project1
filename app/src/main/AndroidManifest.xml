@@ -30,6 +30,7 @@
         </activity>
         <activity android:name=".EditActivity" />
         <activity android:name=".SettingsActivity"/>
+        <activity android:name=".HistoryActivity" />
     </application>
 
 </manifest>

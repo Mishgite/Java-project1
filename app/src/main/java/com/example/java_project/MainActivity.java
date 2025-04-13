@@ -6,9 +6,11 @@ import android.app.SearchManager;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,7 +26,10 @@ import android.widget.Toast;
 import android.os.Handler;
 import android.os.Looper;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -98,6 +103,12 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
+        Button buttonHistory = findViewById(R.id.buttonHistory);
+        buttonHistory.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+            startActivityForResult(intent, 123); // произвольный код
+        });
+
     }
 
     private void selectImage() {
@@ -124,6 +135,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void saveToHistory(String text) {
+        if (text.isEmpty()) return;
+
+        HistoryDatabaseHelper dbHelper = new HistoryDatabaseHelper(this);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("text", text);
+        values.put("date", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(new Date()));
+
+        db.insert("history", null, values);
+        db.close();
+    }
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -136,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (editedText != null) {
                 editTextResults.setText(editedText);
+                saveToHistory(editedText);
             }
         }
 
@@ -170,6 +197,18 @@ public class MainActivity extends AppCompatActivity {
                 editTextResults.setText(recognizedText);
             }
         }
+        if (requestCode == 123 && resultCode == RESULT_OK && data != null) {
+            String action = data.getStringExtra("action");
+            String historyText = data.getStringExtra("text");
+            if (historyText != null) {
+                if ("replace".equals(action)) {
+                    editTextResults.setText(historyText);
+                } else if ("insert".equals(action)) {
+                    editTextResults.append("\n" + historyText);
+                }
+            }
+        }
+
     }
 
     private void loadImageAsync(Uri imageUri) {
@@ -215,7 +254,13 @@ public class MainActivity extends AppCompatActivity {
                     for (Text.TextBlock block : result.getTextBlocks()) {
                         recognizedText.append(block.getText()).append("\n");
                     }
-                    editTextResults.setText(recognizedText.length() > 0 ? recognizedText.toString() : "Текст не распознан.");
+
+                    String text = recognizedText.toString();
+                    editTextResults.setText(!text.isEmpty() ? text : "Текст не распознан.");
+
+                    if (!text.isEmpty()) {
+                        saveToHistory(text); // <<< Вставка сохранения в БД
+                    }
                 })
                 .addOnFailureListener(e -> editTextResults.setText("Ошибка: " + e.getMessage()))
                 .addOnCompleteListener(task -> progressBar.setVisibility(View.GONE));

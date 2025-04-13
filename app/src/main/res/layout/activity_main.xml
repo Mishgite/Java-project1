@@ -94,6 +94,13 @@
             android:text="Редактировать"
             android:layout_marginTop="10dp"/>
         <Button
+            android:id="@+id/buttonHistory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="История"
+            android:layout_marginTop="10dp"/>
+
+        <Button
             android:id="@+id/buttonSearchGoogle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
