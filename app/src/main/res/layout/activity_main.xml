@@ -1,111 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
-    <Button
+
+    <!-- Кнопка настроек -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSettings"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Настройки"/>
+        android:text="@string/settings"
+        app:icon="@drawable/ic_settings"
+        app:iconGravity="textStart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ContentDescription" />
+
+    <!-- Изображение -->
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/imageGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="imageView, imageButtons" />
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="200dp"
+        android:background="@color/material_on_surface_stroke"
         android:scaleType="centerCrop"
-        android:layout_marginBottom="16dp"
-        android:background="@android:color/darker_gray" />
-    <LinearLayout
-        android:layout_width="match_parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonSettings"
+        tools:src="@drawable/ic_placeholder" />
+
+    <!-- Кнопки для работы с изображением -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonSelectImage"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <Button
-            android:id="@+id/buttonSelectImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Выбрать изображение"
-            android:layout_marginBottom="8dp" />
+        android:layout_marginTop="8dp"
+        android:text="@string/select_image"
+        app:icon="@drawable/ic_image"
+        app:layout_constraintEnd_toStartOf="@+id/buttonTakePhoto"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/imageView" />
 
-        <Button
-            android:id="@+id/buttonTakePhoto"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Сделать фото" />
-    </LinearLayout>
-    <Button
-        android:id="@+id/buttonVoiceInput"
-        android:layout_width="wrap_content"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonTakePhoto"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="🎤 Голосовой ввод" />
+        android:text="@string/take_photo"
+        app:icon="@drawable/ic_camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonSelectImage"
+        app:layout_constraintTop_toTopOf="@id/buttonSelectImage" />
 
-    <Button
-        android:id="@+id/buttonRecognizeText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Распознать текст"
-        android:layout_marginBottom="8dp"
-        android:enabled="false" />
-
-    <Button
-        android:id="@+id/buttonScanQR"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Сканировать QR-код"
-        android:layout_marginBottom="8dp"
-        android:enabled="false"/>
-
-
-    <Button
-        android:id="@+id/buttonCopyText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Копировать текст"/>
-
+    <!-- Прогресс-бар -->
     <ProgressBar
         android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:layout_centerInParent="true"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-
-    <EditText
-        android:id="@+id/editTextResults"
+    <!-- Результаты распознавания -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/resultsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Распознанный текст"
-        android:inputType="textMultiLine"
-        android:gravity="top"
-        android:minHeight="100dp"
-        android:maxHeight="100dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/buttonTakePhoto">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextResults"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:hint="@string/recognized_text"
+            android:inputType="textMultiLine"
+            android:scrollbars="vertical" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Кнопки действий с текстом -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonVoiceInput"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/voice_input"
+        app:icon="@drawable/ic_mic"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/resultsContainer" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonRecognizeText"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:enabled="false"
+        android:text="@string/recognize_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonVoiceInput" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonScanQR"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:enabled="false"
+        android:text="@string/scan_qr"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonRecognizeText" />
+
+    <!-- Группа нижних кнопок -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <Button
-            android:id="@+id/buttonEditText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Редактировать"
-            android:layout_marginTop="10dp"/>
-        <Button
-            android:id="@+id/buttonHistory"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="История"
-            android:layout_marginTop="10dp"/>
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonScanQR">
 
-        <Button
-            android:id="@+id/buttonSearchGoogle"
-            android:layout_width="wrap_content"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonEditText"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Искать в Google"
-            android:layout_marginTop="10dp"/>
+            android:layout_weight="1"
+            android:text="@string/edit" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonHistory"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/history" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonSearchGoogle"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/search_google" />
     </LinearLayout>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

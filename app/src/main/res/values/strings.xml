@@ -1,3 +1,31 @@
 <resources>
     <string name="app_name">Schmoogle</string>
+    <string name="settings">Настройки</string>
+    <string name="select_image">Выбрать изображение</string>
+    <string name="take_photo">Сделать фото</string>
+    <string name="voice_input">Голосовой ввод</string>
+    <string name="recognize_text">Распознать текст</string>
+    <string name="scan_qr">Сканировать QR</string>
+    <string name="edit">Редактировать</string>
+    <string name="history">История</string>
+    <string name="search_google">Искать в Google</string>
+    <string name="recognized_text">Распознанный текст</string>
+    <string name="load_history_error">Ошибка загрузки истории</string>
+    <string name="clear_history_title">Очистить историю</string>
+    <string name="clear_history_confirmation">Вы уверены, что хотите удалить всю историю?</string>
+    <string name="clear">Очистить</string>
+    <string name="history_cleared">История очищена</string>
+    <string name="select_action">Выберите действие</string>
+    <string name="replace">Заменить</string>
+    <string name="insert">Вставить</string>
+    <string name="close">Закрыть</string>
+    <string name="cancel">Отмена</string>
+    <string name="history_empty">История пуста</string>
+    <string name="clear_history">Очистить историю</string>
+    <string name="error">Ошибка</string>
+    <string name="ok">OK</string>
+    <string name="history_title">История</string>
+    <string name="error_load_history">Ошибка загрузки истории</string>
+    <string name="choose_action">Выберите действие</string>
+    <string name="append">Добавить</string>
 </resources>

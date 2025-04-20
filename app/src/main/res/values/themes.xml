@@ -6,4 +6,5 @@
     </style>
 
     <style name="Theme.Javaproject" parent="Base.Theme.Javaproject" />
+    <color name="ic_placeholder">#BDBDBD</color>
 </resources>
