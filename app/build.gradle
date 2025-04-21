@@ -44,6 +44,7 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.0'
     implementation 'com.google.mlkit:object-detection:16.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'com.google.android.material:material:1.6.0'
     implementation libs.vision.common
     implementation libs.object.detection.common
     implementation libs.object.detection
