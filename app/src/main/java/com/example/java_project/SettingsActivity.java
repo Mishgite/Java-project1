@@ -2,64 +2,59 @@ package com.example.java_project;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import com.example.java_project.databinding.ActivitySettingsBinding;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private Button buttonToggleTheme;
+    private ActivitySettingsBinding binding;
     private SharedPreferences sharedPreferences;
-    private ImageButton buttonBack;
+    private static final String DARK_MODE_KEY = "dark_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
-        if (sharedPreferences.getBoolean("dark_mode", false)) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        }
-
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
-        buttonBack = findViewById(R.id.buttonBack);
-        buttonBack.setOnClickListener(v -> {
-            finish();
-        });
-        buttonToggleTheme = findViewById(R.id.buttonToggleTheme);
 
-        updateButtonText();
+        // Инициализация View Binding
+        binding = ActivitySettingsBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        buttonToggleTheme.setOnClickListener(v -> toggleTheme());
-        buttonBack.setOnClickListener(v -> finish());
+        // Настройка темы ДО установки контента
+        sharedPreferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        applyTheme();
+
+        setupUI();
+    }
+
+    private void applyTheme() {
+        boolean isDarkMode = sharedPreferences.getBoolean(DARK_MODE_KEY, false);
+        AppCompatDelegate.setDefaultNightMode(
+                isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
+        );
+    }
+
+    private void setupUI() {
+        // Кнопка "Назад"
+        binding.buttonBack.setOnClickListener(v -> finish());
+
+        // Кнопка переключения темы
+        updateThemeButtonText();
+        binding.buttonToggleTheme.setOnClickListener(v -> toggleTheme());
     }
 
     private void toggleTheme() {
-        boolean isDarkMode = sharedPreferences.getBoolean("dark_mode", false);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            editor.putBoolean("dark_mode", false);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            editor.putBoolean("dark_mode", true);
-        }
-        editor.apply();
-
-        updateButtonText();
-        recreate();
+        boolean newMode = !sharedPreferences.getBoolean(DARK_MODE_KEY, false);
+        sharedPreferences.edit().putBoolean(DARK_MODE_KEY, newMode).apply();
+        applyTheme();
+        recreate(); // Для мгновенного применения темы
     }
 
-    private void updateButtonText() {
-        if (sharedPreferences.getBoolean("dark_mode", false)) {
-            buttonToggleTheme.setText("Выключить тёмную тему");
-        } else {
-            buttonToggleTheme.setText("Включить тёмную тему");
-        }
+    private void updateThemeButtonText() {
+        binding.buttonToggleTheme.setText(
+                sharedPreferences.getBoolean(DARK_MODE_KEY, false)
+                        ? "Выключить тёмную тему"
+                        : "Включить тёмную тему"
+        );
     }
 }

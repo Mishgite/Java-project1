@@ -1,34 +1,36 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp">
 
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonBack"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@android:drawable/ic_menu_revert"
-        android:contentDescription="Назад"
-        android:layout_gravity="start"
-        android:layout_marginBottom="16dp"
-        android:background="?android:attr/selectableItemBackground" />
+        app:icon="@drawable/ic_back"
+        app:iconTint="?attr/colorOnSurface"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="Назад"/>
 
-    <TextView
-        android:layout_width="wrap_content"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Настройки приложения"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_gravity="center"/>
+        app:layout_constraintTop_toBottomOf="@id/buttonBack"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="32dp">
 
-    <Button
-        android:id="@+id/buttonToggleTheme"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Переключить тему"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"/>
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/buttonToggleTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Тёмная тема"
+            android:padding="16dp"/>
 
-</LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

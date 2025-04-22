@@ -58,7 +58,7 @@ public class EditActivity extends AppCompatActivity {
     private void applyItalic() {
         String text = binding.editText.getText().toString();
         if (!text.isEmpty()) {
-            binding.editText.setText("_" + text + "_");
+            binding.editText.setText("__" + text + "__");
         }
     }
 
